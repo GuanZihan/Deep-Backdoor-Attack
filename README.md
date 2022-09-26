@@ -10,7 +10,7 @@ To play with the codes, simple run the following command to launch the attack
 
 Step 1: Trigger Generation
 ```shell
-python trigger_generation.py --cuda 1
+python trigger_generation.py --cuda 1 --batch_size 1
 ```
 This command will generate a series of trigger patterns by activating a specified neuron in the clean model. Then the trigger patterns will be superimposed on the clean images to construct poisoned samples.
 

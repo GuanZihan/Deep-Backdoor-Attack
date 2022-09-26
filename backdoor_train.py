@@ -4,13 +4,9 @@ from data_loader import *
 from torch.utils.data import DataLoader
 from config import get_arguments
 from tqdm import tqdm
-import gc
 import numpy as np
-import json
 from torch.optim.lr_scheduler import StepLR
 import logging
-# from apex import amp
-
 
 
 losses_clean_train = []

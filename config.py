@@ -12,10 +12,11 @@ def get_arguments():
                         help='unlearning models weight are saved here')
     parser.add_argument('--log_root', type=str, default='./logs', help='logs are saved here')
     parser.add_argument('--dataset', type=str, default='CIFAR10', help='name of image dataset')
-    parser.add_argument('--model_name', type=str, default='WRN-16-2', help='name of model')
+    parser.add_argument('--model_name', type=str, default='ResNet34', help='name of model')
     parser.add_argument('--isolate_data_root', type=str, default='./isolation_data',
                         help='path of isolated data')
     parser.add_argument('--load_fixed_data', type=int, default=0, help='load the local poisoned dataest')
+    parser.add_argument('--clean_model', type=str, default="./weight/ResNet34-clean-91.tar")
 
     # training hyper parameters
     parser.add_argument('--print_freq', type=int, default=200, help='frequency of showing training results on console')
