@@ -35,8 +35,6 @@ def select_model(dataset,
         model = NormalCNN(depth=32, num_classes=n_classes)
     elif model_name == "resnet":
         model = resnet18()
-    elif model_name == "PreActResNet18":
-        model = PreActResNet18()
     elif model_name == "wresnet_student":
         model = WideResNetStudent(depth=16, num_classes=n_classes, widen_factor=1, dropRate=0)
     elif model_name == 'simple_cnn':
@@ -47,19 +45,10 @@ def select_model(dataset,
     checkpoint_epoch = None
     if pretrained:
         model_path = os.path.join(pretrained_models_path)
-        print('Loading Model from {}'.format(model_path))
         checkpoint = torch.load(model_path, map_location='cpu')
-        print(checkpoint.keys())
         model.load_state_dict(checkpoint['state_dict'])
 
         checkpoint_epoch = checkpoint['epoch']
-        print("=> loaded checkpoint '{}' (epoch {}) ".format(model_path, checkpoint['epoch']))
-    # if dataset == "Cifar100":
-    #   model = models.resnet101(pretrained=False)
-    #   #Finetune Final few layers to adjust for tiny imagenet input
-    #   model.avgpool = nn.AdaptiveAvgPool2d(1)
-    #   num_ftrs = model.fc.in_features
-    #   model.fc = nn.Linear(num_ftrs, 100)
 
     return model, checkpoint_epoch
 

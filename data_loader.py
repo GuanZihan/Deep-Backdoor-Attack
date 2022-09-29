@@ -83,8 +83,6 @@ def get_test_loader(opt):
         # transforms.Normalize([0.5], [0.5])
         ])
         testset = datasets.FashionMNIST(root='data/FMNIST', train=False, download=True)
-    elif opt.dataset == 'celeba':
-        testset = CelebA_attr(opt, "test")
     else:
         raise Exception('Invalid dataset')
     
@@ -106,24 +104,6 @@ def get_test_loader(opt):
                                        batch_size=opt.batch_size,
                                        shuffle=False,
                                        )
-    
-    # imgs = np.load("new_trigger_10000_multiple.npy", allow_pickle=True)
-    # backdoor_dataset = []
-    # poisoned_dataset = []
-    # clean_dataset = []
-    # target_label = 3
-    # ctx = 0
-    # alpha=0.05
-    # # chosen_idx = np.random.permutation(len(testset))[:int(len(testset) * 0.1)]
-    # for idx, (img, label) in tqdm(enumerate(test_clean_loader)):
-    #     img = img[0]
-    #     ctx = np.random.randint(0,10000)
-    #     bad_img = np.clip(alpha * imgs[ctx] + (1-alpha)*(img.permute(1,2,0).cpu().numpy()), 0, 1)
-        
-    #     poisoned_dataset.append((bad_img.astype(np.float32), target_label))
-    # print(len(poisoned_dataset))
-    # np.save("../ABL/poisoned_data_new_only_test_gtsrb.npy", np.array(poisoned_dataset))
-    # input()
 
     return test_clean_loader, test_bad_loader
 
@@ -183,20 +163,15 @@ def get_backdoor_loader(opt):
           # transforms.RandomRotation(opt.random_rotation)
           ])
         trainset = datasets.FashionMNIST(root='data/FMNIST', train=True, download=True)
-    elif opt.dataset == "celeba":
-        trainset = CelebA_attr(opt, "train")
     else:
         raise Exception('Invalid dataset')
 
     
-    # print(trainset[0][0])
-    # input()
     train_data_bad = DatasetBD(opt, full_dataset=trainset, inject_portion=opt.inject_portion, transform=tf_train, mode='train')
 
     # train_data_bad = train_data_bad[:5000]
 
-    # print(len(train_data_bad))
-    
+
    
 
     train_bad_loader = DataLoader(dataset=train_data_bad,
@@ -209,41 +184,6 @@ def get_backdoor_loader(opt):
     clean_subset = DataLoader(dataset=Dataset2(train_data_bad.clean_data, tf_train),
                batch_size=opt.batch_size,
                shuffle=False, )
-    
-    
-    np.save("grid_data.npy", train_data_bad.dataset)
-    np.save("grid_data_backdoor.npy", train_data_bad.bad_data)
-    np.save("grid_data_clean.npy", train_data_bad.clean_data)
-    # input()
-
-    # imgs = np.load("new_trigger_10000_multiple.npy", allow_pickle=True)
-    # backdoor_dataset = []
-    # poisoned_dataset = []
-    # clean_dataset = []
-    # target_label = 3
-    # ctx = 0
-    # alpha=0.05
-    # chosen_idx = np.random.permutation(len(trainset))[:int(len(trainset) * 0.1)]
-    # for idx, (img, label) in tqdm(enumerate(train_bad_loader)):
-    #   if idx in chosen_idx:
-    #     img = img[0]
-    #     bad_img = np.clip(alpha * imgs[ctx] + (1-alpha)*(img.permute(1,2,0).cpu().numpy()), 0, 1)
-    #     ctx += 1
-    #     backdoor_dataset.append((bad_img, target_label))
-    #     poisoned_dataset.append((bad_img, target_label))
-    #   else:
-    #     img = img[0]
-    #     clean_dataset.append(((img).permute(1,2,0).cpu().numpy(), label.item()))
-    #     poisoned_dataset.append(((img).permute(1,2,0).cpu().numpy(), label.item()))
-    # print(ctx)
-    # np.save("../ABL/perm_index_newTrigger_gtsrb.npy", np.array(chosen_idx))
-    # np.save("../ABL/poisoned_data_newTrigger_gtsrb.npy", np.array(poisoned_dataset))
-    # np.save("../ABL/poisoned_data_newTrigger_only_gtsrb", np.array(backdoor_dataset))
-    # np.save("../ABL/poisoned_data_newTrigger_other_gtsrb", np.array(clean_dataset))
-    # print("done!")
-    # input()
-
-
 
     return train_data_bad, train_bad_loader, train_data_bad.perm, bad_subset, clean_subset
 
@@ -260,7 +200,6 @@ class Dataset_npy(torch.utils.data.Dataset):
 
         if self.transform:
             image = self.transform(image)
-        # print(type(image), image.shape)
         return image, label
 
     def __len__(self):
@@ -374,14 +313,9 @@ class DatasetBD(Dataset):
         np.random.seed(12345)
 
         perm = np.random.permutation(len(dataset))[0: int(len(dataset) * inject_portion)]
-        # perm = np.arange(0, int(len(dataset) * inject_portion))
-        print(sorted(perm)[:100])
-        # input()
         perm_ = perm
         if target_type == 'cleanLabel':
           perm_ = []
-        print(perm_)
-        
         # if mode == "train":
         #   perm[0:64] = [i for i in range(64)]
         dataset
@@ -690,12 +624,6 @@ class DatasetBD(Dataset):
         blend_img = (1 - alpha) * img + alpha * mask
 
         blend_img = np.clip(blend_img.astype('uint8'), 0, 255)
-        # print(img.shape)
-        # input()
-        # np.save("blended", blend_img)
-        # input()
-        # print(blend_img.dtype)
-        # print(mask)
         return blend_img
 
     def _signalTrigger(self, img, width, height, distance, trig_w, trig_h):
@@ -722,12 +650,7 @@ class DatasetBD(Dataset):
         return img_
     
     def _deepTrigger(self, img, width, height, distance, trig_w, trig_h, model):
-      target_class = 8 # Flamingo
-      csig = RegularizedClassSpecificImageGeneration(model, target_class)
-      trigger_pattern = csig.generate()
-      new_img = np.clip((0.8*(img) + 0.2*(trigger_pattern.cpu().detach().numpy()*255).astype('uint8')).astype('uint8'), 0, 255)
-      # np.save("temp_img.npy", new_img)
-      return new_img
+      return img
    
 def _plant_sin_trigger(img, delta=60, f=4, debug=False):
       alpha = 0.8
@@ -752,91 +675,6 @@ def _plant_sin_trigger(img, delta=60, f=4, debug=False):
       # np.save("signal.npy", img)
       # input()
       return img
-
-
-use_cuda = True
-
-def recreate_image(im_as_var):
-    recreated_im = copy.copy(im_as_var.data.numpy()[0])
-    recreated_im[recreated_im > 1] = 1
-    recreated_im[recreated_im < 0] = 0
-    recreated_im = recreated_im.transpose(1, 2, 0)
-    return recreated_im
-
-
-def preprocess_and_blur_image(pil_im, resize_im=True, blur_rad=None):
-    im_as_arr = pil_im.transpose(2, 0, 1)  # Convert array to D,W,H
-
-    im_as_ten = torch.from_numpy(im_as_arr).float()
-    im_as_ten.unsqueeze_(0)
-    if use_cuda:
-        im_as_var = Variable(im_as_ten.cuda(), requires_grad=True)
-    else:
-        im_as_var = Variable(im_as_ten, requires_grad=True)
-    return im_as_var
-
-class RegularizedClassSpecificImageGeneration():
-    def __init__(self, model, target_class):
-        self.model = model.cuda() if use_cuda else model
-        self.model.eval()
-        self.target_class = target_class
-        self.created_image = np.random.uniform(0, 1, (32, 32, 3))
-        self.mask = torch.ones((1, 3, 32, 32))
-        # mask[0, :, :, :] = 1
-        self.mask_d = np.ones((32, 32, 3)) #  32 3 32 3
-        # mask_d[:, : :] = 1
-        # mask_d_c = np.zeros((32, 32, 3))
-    def generate(self, iterations=250, blur_freq=6, blur_rad=0.3, wd = 0.0005, clipping_value=0.1):
-        initial_learning_rate = 0.5
-        
-        self.created_image = np.multiply(self.created_image, self.mask_d)
-        
-        for i in range(1, iterations):
-            if i % blur_freq == 0:
-                self.processed_image = preprocess_and_blur_image(
-                    self.created_image, False, blur_rad)
-            else:
-                self.processed_image = preprocess_and_blur_image(
-                    self.created_image, False)
-
-            if use_cuda:
-                self.processed_image = self.processed_image.cuda()
-
-            optimizer = torch.optim.SGD([self.processed_image],
-                            lr=initial_learning_rate)
-            # Forward
-            
-            features = []
-            def hook(module, input, output):
-              ret = output.view(output.size(0), -1)
-              features.append(ret.clone())
-            handle=self.model.layer2[4].conv2.register_forward_hook(hook)
-            output = self.model(self.processed_image)
-            class_loss = -features[0][0, 4826].sum()
-
-            # if i in np.linspace(0, iterations, 10, dtype=int):
-            #     plt.imshow(self.created_image)
-            #     plt.show()
-                
-            #     print('Iteration:', str(i), 'Loss',
-            #           "{0:.2f}".format(class_loss.data.cpu().numpy()))
-            # Zero grads
-            self.model.zero_grad()
-            # Backward
-            class_loss.backward()
-            # Update image
-            self.processed_image.grad = self.processed_image.grad * self.mask.cuda()
-            
-            optimizer.step()
-            # Recreate image
-            self.created_image = recreate_image(self.processed_image.cpu())
-
-        #save final image
-        print(torch.argmax(features[0]),torch.max(features[0]))
-        self.processed_image = torch.swapaxes(self.processed_image, 1, 2)
-        self.processed_image = torch.swapaxes(self.processed_image, 2, 3)
-        # np.save('new_trigger.npy', self.created_image)
-        return self.processed_image[0]
 
 
 

@@ -1,9 +1,5 @@
 from __future__ import print_function
-import torch
-import os
 import pandas as pd
-import matplotlib.pyplot as plt
-import numpy as np
 
 class AverageMeter(object):
     def __init__(self):
@@ -50,7 +46,6 @@ def transform_time(s):
 
 
 def accuracy(output, target, topk=(1,)):
-    """Computes the precision@k for the specified values of k"""
     maxk = max(topk)
     batch_size = target.size(0)
     _, pred = output.topk(maxk, 1, True, True)
