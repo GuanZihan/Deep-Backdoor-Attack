@@ -11,8 +11,6 @@ perm1 = set()
 perm2 = set()
 
 def compute_loss_value(opt, poisoned_data, model_ascent):
-    # Calculate loss value per example
-    # Define loss function
     if opt.cuda:
         criterion = nn.CrossEntropyLoss().cuda()
     else:
@@ -24,30 +22,17 @@ def compute_loss_value(opt, poisoned_data, model_ascent):
                                         batch_size=1,
                                         shuffle=False,
                                         )
-    labels = []
-
     for idx, (img, target) in tqdm(enumerate(example_data_loader, start=0)):
-
-        for i, element in enumerate(target):
-            labels.append(element)
         if opt.cuda:
             img = img.cuda()
             target = target.cuda()
         with torch.no_grad():
             output = model_ascent(img)
             loss = criterion(output, target)
-
-        
         losses_record_original.append(loss.item())
 
-
     losses_idx = np.argsort(np.array(losses_record_original))
-
-    # Show the top 10 loss values
-    losses_record_arr = np.array(losses_record_original)
-
-    print('Top ten loss value:', losses_record_arr[losses_idx[:10]])
-    return losses_idx, labels
+    return losses_idx
 
 def isolate_data(poisoned_data, losses_idx, ratio):
     # Initialize lists
@@ -93,12 +78,11 @@ def train_step(opt, train_loader, model_ascent, optimizer, criterion, epoch):
     model_ascent.train()
 
     for idx, (img, target) in enumerate(train_loader, start=1):
-
         if opt.cuda:
             img = img.cuda()
             target = target.cuda()
 
-            output = model_ascent(img)
+        output = model_ascent(img)
  
         loss_ascent = criterion(output, target)
 
@@ -112,9 +96,6 @@ def train_step(opt, train_loader, model_ascent, optimizer, criterion, epoch):
 
         top1.update(prec1.item(), img.size(0))
         top5.update(prec5.item(), img.size(0))
-
-        
-
 
         if idx % opt.print_freq == 0:
             print('Epoch[{0}]:[{1:03}/{2:03}] '
@@ -232,8 +213,9 @@ def train(opt):
     if opt.load_fixed_data:
         # load the fixed poisoned data, e.g. Dynamic, FC, DFST attacks etc.
         if opt.trigger_type == "dba":
-          poisoned_data = np.load("poisoned_data_dba" + addsuffix(opt) + ".npy", allow_pickle=True)
-          perm_index_fixed = np.load("perm_index_dba" + addsuffix(opt) + ".npy", allow_pickle=True)
+          poisoned_data = np.load("./data/dba/poisoned_data_dba.npy", allow_pickle=True)
+          perm_index_fixed = np.load("./data/dba/perm_index_dba.npy", allow_pickle=True)
+
         
         tf_train = transforms.Compose([transforms.ToTensor()])
         
@@ -256,9 +238,9 @@ def train(opt):
     if opt.load_fixed_data:
         # load the fixed poisoned data, e.g. Dynamic, FC, DFST attacks etc.
         if opt.trigger_type == "dba":
-          poisoned_data_test = np.load("poisoned_data_dba_only" + addsuffix(opt) + ".npy", allow_pickle=True)
-          other_test = np.load("poisoned_data_dba_other" + addsuffix(opt) + ".npy", allow_pickle=True)
-          testset_poisoned = np.load("poisoned_data_dba_test" + addsuffix(opt) + ".npy", allow_pickle=True)
+          poisoned_data_test = np.load("./data/dba/poisoned_data_dba_only" + addsuffix(opt) + ".npy", allow_pickle=True)
+          other_test = np.load("./data/dba/poisoned_data_dba_other" + addsuffix(opt) + ".npy", allow_pickle=True)
+          testset_poisoned = np.load("./data/dba/poisoned_data_dba_only_test" + addsuffix(opt) + ".npy", allow_pickle=True)
         
         
         poisoned_data_test = Dataset2(poisoned_data_test, tf_test)
@@ -292,6 +274,7 @@ def train(opt):
             test(opt, test_clean_loader_testset, test_bad_loader_testset, model_ascent,
                                          criterion, epoch + 1, mode="test")
 
+
         train_step(opt, poisoned_data_loader, model_ascent, optimizer, criterion, epoch + 1)
 
         scheduler.step()
@@ -312,7 +295,7 @@ def train(opt):
         # compute the loss value and isolate data at iteration 20
         if epoch < 5:
           print('----------- Calculate loss value per example -----------')
-          losses_idx, labels = compute_loss_value(opt, poisoned_data, model_ascent)
+          losses_idx = compute_loss_value(opt, poisoned_data, model_ascent)
           print('----------- Collect isolation data -----------')
           IPs = []
           for i in [opt.inject_portion]:

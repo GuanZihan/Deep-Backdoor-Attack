@@ -16,7 +16,7 @@ def recreate_image(im_as_var):
 
 class DBAGenearator():
 
-    def __init__(self, opt, model, target_class):
+    def __init__(self, opt, model):
 
         if opt.cuda:
             self.model = model.cuda()
@@ -24,7 +24,6 @@ class DBAGenearator():
             self.model = model
 
         self.model.eval()
-        self.target_class = target_class
 
         # Generate a random image
         self.created_image = np.random.uniform(0, 1, (32, 32, 3))
@@ -84,48 +83,77 @@ class DBAGenearator():
 if __name__ == "__main__":
     opt = get_arguments().parse_args()
     triggers = []
-    train_data_bad, train_bad_loader, perm, bad_data, clean_data = get_backdoor_loader(opt)
-    test_clean_loader, test_bad_loader = get_test_loader(opt)
-
-    # generate triggers for the clean data
-    for iter in range(10):
-        target_class = 8
-        model, _ = select_model(dataset=opt.dataset,
-                                model_name=opt.model_name,
-                                pretrained=True,
-                                pretrained_models_path=opt.clean_model,
-                                n_classes=opt.num_class)
-
-        generator = DBAGenearator(opt, model, target_class)
-        img = generator.generate(iter=iter, iterations=80, target_value=5)
-        triggers.append(img)
-    np.save("dba_train.npy", np.array(triggers))
+    train_data_bad, _, _, _, _ = get_backdoor_loader(opt)
+    test_clean_loader, _ = get_test_loader(opt)
 
     transform = transforms.Compose(
         [transforms.ToTensor()])
 
-    trainset = datasets.CIFAR10(root='data/CIFAR10', train=True,
-                                download=True, transform=transform)
+    # generate triggers for the clean data
+    if opt.train_or_test == "train":
+        for iter in range(int(len(train_data_bad)/10000)):
+            model, _ = select_model(dataset=opt.dataset,
+                                    model_name=opt.model_name,
+                                    pretrained=True,
+                                    pretrained_models_path=opt.clean_model,
+                                    n_classes=opt.num_class)
 
-    imgs = np.load("dba_train.npy", allow_pickle=True)
-    backdoor_dataset = []
-    poisoned_dataset = []
-    clean_dataset = []
-    target_label = 3
-    ctx = 0
-    alpha = 0.02
-    chosen_idx = np.random.permutation(len(trainset))[:int(len(trainset) * 0.1)]
-    for idx, (img, label) in tqdm(enumerate(trainset)):
-        if idx in chosen_idx:
-            bad_img = alpha * imgs[ctx] + (1 - alpha) * img.numpy().transpose(1, 2, 0)
+            generator = DBAGenearator(opt, model)
+            img = generator.generate(iter=iter, iterations=80, target_value=5)
+            triggers.append(img)
+        triggers = np.array(triggers)
+        np.save("./data/dba/dba_train.npy", triggers)
+
+        trainset = datasets.CIFAR10(root='data/CIFAR10', train=True,
+                                    download=True, transform=transform)
+
+        backdoor_dataset = []
+        poisoned_dataset = []
+        clean_dataset = []
+        target_label = 3
+        ctx = 0
+        alpha = 0.02
+        chosen_idx = np.random.permutation(len(trainset))[:int(len(trainset) * 0.1)]
+        for idx, (img, label) in tqdm(enumerate(trainset)):
+            if idx in chosen_idx:
+                bad_img = alpha * triggers[ctx] + (1 - alpha) * img.numpy().transpose(1, 2, 0)
+                ctx += 1
+                ctx = ctx % 5 # remove this!!
+                backdoor_dataset.append((bad_img, target_label))
+                poisoned_dataset.append((bad_img, target_label))
+            else:
+                clean_dataset.append((img.cpu().numpy().transpose(1, 2, 0), label))
+                poisoned_dataset.append((img.cpu().numpy().transpose(1, 2, 0), label))
+
+        np.save("./data/dba/perm_index_dba.npy", np.array(chosen_idx))
+        np.save("./data/dba/poisoned_data_dba.npy", np.array(poisoned_dataset))
+        np.save("./data/dba/poisoned_data_dba_only", np.array(backdoor_dataset))
+        np.save("./data/dba/poisoned_data_dba_other", np.array(clean_dataset))
+    elif opt.train_or_test == "test":
+        for iter in range(int(len(train_data_bad)/10000)):
+            model, _ = select_model(dataset=opt.dataset,
+                                    model_name=opt.model_name,
+                                    pretrained=True,
+                                    pretrained_models_path=opt.clean_model,
+                                    n_classes=opt.num_class)
+
+            generator = DBAGenearator(opt, model)
+            img = generator.generate(iter=iter, iterations=80, target_value=5)
+            triggers.append(img)
+        triggers = np.array(triggers)
+        np.save("./data/dba/dba_test.npy", triggers)
+        poisoned_dataset = []
+        target_label = 3
+        ctx = 0
+        alpha = 0.02
+        testset = datasets.CIFAR10(root='data/CIFAR10', train=False,
+                                   download=True, transform=transform)
+        for idx, (img, label) in tqdm(enumerate(testset)):
+            img = img.permute(1, 2, 0).numpy()
+            bad_img = alpha * triggers[ctx] + (1 - alpha) * img
             ctx += 1
-            backdoor_dataset.append((bad_img, target_label))
+            ctx = ctx % 5 # remove this!!
             poisoned_dataset.append((bad_img, target_label))
-        else:
-            clean_dataset.append((img[0].cpu().numpy(), label))
-            poisoned_dataset.append((img[0].cpu().numpy(), label))
-
-    np.save("perm_index_dba.npy", np.array(chosen_idx))
-    np.save("poisoned_data_dba.npy", np.array(poisoned_dataset))
-    np.save("poisoned_data_dba_only", np.array(backdoor_dataset))
-    np.save("poisoned_data_dba_other", np.array(clean_dataset))
+        np.save("./data/dba/poisoned_data_dba_only_test.npy", np.array(poisoned_dataset))
+    else:
+        raise NotImplementedError

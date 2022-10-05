@@ -33,4 +33,6 @@ def get_arguments():
     parser.add_argument('--trig_w', type=int, default=3, help='width of trigger pattern')
     parser.add_argument('--trig_h', type=int, default=3, help='height of trigger pattern')
 
+    parser.add_argument('--train_or_test', type=str, default="train", help='generate triggers fro the train set or the test set')
+
     return parser

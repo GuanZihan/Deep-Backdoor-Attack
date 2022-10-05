@@ -453,7 +453,7 @@ class DatasetBD(Dataset):
 
     def selectTrigger(self, img, width, height, distance, trig_w, trig_h, triggerType):
 
-        assert triggerType in ["CL", 'Refool', 'WaNetTrigger', 'FCTrigger', 'newTrigger','squareTrigger', 'gridTrigger', 'fourCornerTrigger', 'randomPixelTrigger',
+        assert triggerType in ["CL", 'Refool', 'WaNetTrigger', 'FCTrigger', 'dba','squareTrigger', 'gridTrigger', 'fourCornerTrigger', 'randomPixelTrigger',
                                'signalTrigger', 'trojanTrigger', "dynamicTrigger", "deepTrigger"]
 
         
@@ -477,7 +477,7 @@ class DatasetBD(Dataset):
 
         elif triggerType == "dynamicTrigger":
             img = self._dynamicTrigger(img, width, height, distance, trig_w, trig_h)
-        elif triggerType == "newTrigger":
+        elif triggerType == "dba":
             img = self._newTrigger(img, width, height, distance, trig_w, trig_h)
         elif triggerType == "deepTrigger":
             model = ResNet(32, 10)
