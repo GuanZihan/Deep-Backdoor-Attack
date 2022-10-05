@@ -84,7 +84,7 @@ if __name__ == "__main__":
     opt = get_arguments().parse_args()
     CUDA = str(opt.cuda_device)
     os.environ["CUDA_VISIBLE_DEVICES"] = CUDA
-    device = "cuda:%d" % CUDA
+    device = "cuda:%s" % CUDA
 
     triggers = []
     train_data_bad, _, _, _, _ = get_backdoor_loader(opt)
