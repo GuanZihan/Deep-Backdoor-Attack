@@ -25,6 +25,7 @@ def get_arguments():
 
     # others
     parser.add_argument('--seed', type=int, default=2, help='random seed')
+    parser.add_argument('--cuda_device', type=int, default=0, help='The CPU device to be used')
     # backdoor attacks
     parser.add_argument('--inject_portion', type=float, default=0.1, help='ratio of backdoor samples')
     parser.add_argument('--target_label', type=int, default=3, help='class of target label')
