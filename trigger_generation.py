@@ -3,7 +3,8 @@ from config import get_arguments
 from data_loader import *
 from models.selector import *
 from tqdm import tqdm
-
+from torch.autograd import Variable
+import copy
 
 def recreate_image(im_as_var):
     recreated_im = copy.copy(im_as_var.data.numpy()[0])
@@ -84,7 +85,7 @@ if __name__ == "__main__":
     opt = get_arguments().parse_args()
     CUDA = str(opt.cuda_device)
     os.environ["CUDA_VISIBLE_DEVICES"] = CUDA
-    device = "cuda:%s" % CUDA
+    device = "cuda:%s"%CUDA
 
     triggers = []
     train_data_bad, _, _, _, _ = get_backdoor_loader(opt)
