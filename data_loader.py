@@ -6,15 +6,9 @@ import numpy as np
 import time
 from tqdm import tqdm
 import pickle
-import matplotlib.pyplot as plt
 import os
 from models.resnet import ResNet
-import copy
-from PIL import Image, ImageFilter
-from torch.autograd import Variable
-import torchvision.transforms.functional as fn
-import gc
-import cv2
+
 def get_train_loader(opt):
     print('==> Preparing train data..')
     tf_train = transforms.Compose([
