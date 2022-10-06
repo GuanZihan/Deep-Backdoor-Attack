@@ -96,7 +96,7 @@ if __name__ == "__main__":
 
     # generate triggers for the clean data
     if opt.train_or_test == "train":
-        for iter in range(int(len(train_data_bad)/10000)):
+        for iter in range(int(len(train_data_bad))):
             model, _ = select_model(dataset=opt.dataset,
                                     model_name=opt.model_name,
                                     pretrained=True,
@@ -123,7 +123,7 @@ if __name__ == "__main__":
             if idx in chosen_idx:
                 bad_img = alpha * triggers[ctx] + (1 - alpha) * img.numpy().transpose(1, 2, 0)
                 ctx += 1
-                ctx = ctx % 5 # remove this!!
+                #ctx = ctx % 5 # remove this!!
                 backdoor_dataset.append((bad_img, target_label))
                 poisoned_dataset.append((bad_img, target_label))
             else:
@@ -135,7 +135,7 @@ if __name__ == "__main__":
         np.save("./data/dba/poisoned_data_dba_only", np.array(backdoor_dataset))
         np.save("./data/dba/poisoned_data_dba_other", np.array(clean_dataset))
     elif opt.train_or_test == "test":
-        for iter in range(int(len(train_data_bad)/10000)):
+        for iter in range(int(len(train_data_bad))):
             model, _ = select_model(dataset=opt.dataset,
                                     model_name=opt.model_name,
                                     pretrained=True,
@@ -157,7 +157,7 @@ if __name__ == "__main__":
             img = img.permute(1, 2, 0).numpy()
             bad_img = alpha * triggers[ctx] + (1 - alpha) * img
             ctx += 1
-            ctx = ctx % 5 # remove this!!
+            #ctx = ctx % 5 # remove this!!
             poisoned_dataset.append((bad_img, target_label))
         np.save("./data/dba/poisoned_data_dba_only_test.npy", np.array(poisoned_dataset))
     else:
