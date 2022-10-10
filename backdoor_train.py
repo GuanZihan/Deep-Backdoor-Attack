@@ -180,6 +180,7 @@ def addsuffix(opt):
 
 
 def train(opt):
+    print(opt.trigger_type)
     # Load models
     print('----------- Network Initialization --------------')
     model_ascent, _ = select_model(dataset=opt.dataset,
@@ -319,7 +320,7 @@ def train(opt):
                 'state_dict': model_ascent.state_dict(),
                 'bad_acc': best_bad_acc,
                 'optimizer': optimizer.state_dict(),
-            }, epoch, is_best, opt)
+            }, epoch, opt)
 
     return poisoned_data, model_ascent, best_clean_testset, best_bad_acc, Ip_dict
 
